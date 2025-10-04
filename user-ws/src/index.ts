@@ -1,3 +1,4 @@
+import { parse } from "path";
 import { WebSocketServer, WebSocket } from "ws";
 
 const wss = new WebSocketServer({
@@ -8,20 +9,24 @@ interface iRoom {
 	sockets: WebSocket[];
 }
 
+export interface iData {
+	type: "join-room" | "chat";
+	room: string;
+	message?: string;
+}
+
 const rooms: Record<string, iRoom> = {};
 
-const connection = (ws: WebSocket) => {
-	ws.on("error", () => console.error);
+wss.on("connection", (ws) => {
+	ws.on("error", console.error);
 
 	ws.on("message", (data: string) => {
-		const parsedData = JSON.parse(data);
-		const dataType = parsedData.type;
-		const room = parsedData.room;
-		const message = parsedData.text;
+		const parsedData: iData = JSON.parse(data);
+		const { type, room } = parsedData;
 		console.log(parsedData);
 
 		// joining the room
-		if (dataType == "join-room") {
+		if (type === "join-room") {
 			if (!rooms[room]) {
 				rooms[room] = {
 					sockets: [],
@@ -31,10 +36,8 @@ const connection = (ws: WebSocket) => {
 		}
 
 		// exchange of messages
-		if (dataType == "chat") {
-			rooms[room]?.sockets.map((socket) => socket.send(message));
+		if (type === "chat") {
+			rooms[room]?.sockets.map((socket) => socket.send(data));
 		}
 	});
-};
-
-wss.on("connection", connection);
+});
