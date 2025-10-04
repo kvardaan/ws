@@ -1,11 +1,12 @@
 import { describe, it, expect } from "vitest";
 
-const BACKEND_URL = process.env.BACKEND_URL ?? "ws://localhost:8080";
+const BACKEND_URL_1 = "ws://localhost:8080";
+const BACKEND_URL_2 = "ws://localhost:8082";
 
-describe("Chat Application", () => {
+describe("Chat Application", { timeout: 10000 }, () => {
 	it("Message from Room 1 reaches another participant in the smae room", async () => {
-		const ws1 = new WebSocket(BACKEND_URL);
-		const ws2 = new WebSocket(BACKEND_URL);
+		const ws1 = new WebSocket(BACKEND_URL_1);
+		const ws2 = new WebSocket(BACKEND_URL_2);
 
 		// to make sure that both sockets are connected
 		// before procedding to further execution

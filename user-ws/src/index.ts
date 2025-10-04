@@ -1,12 +1,9 @@
-import { parse } from "path";
-import { WebSocketServer, WebSocket } from "ws";
+import { WebSocketServer, WebSocket as WSType } from "ws";
 
-const wss = new WebSocketServer({
-	port: 8080,
-});
+const wss = new WebSocketServer({ port: 8080 });
 
 interface iRoom {
-	sockets: WebSocket[];
+	sockets: WSType[];
 }
 
 export interface iData {
@@ -17,13 +14,22 @@ export interface iData {
 
 const rooms: Record<string, iRoom> = {};
 
+const relayerSocket = new WebSocket("ws://localhost:8081");
+
+relayerSocket.onmessage = ({ data }) => {
+	const parsedData: iData = JSON.parse(data.toString());
+	const { room } = parsedData;
+
+	// exchange of messages
+	rooms[room]?.sockets.map((socket) => socket.send(data));
+};
+
 wss.on("connection", (ws) => {
 	ws.on("error", console.error);
 
 	ws.on("message", (data: string) => {
 		const parsedData: iData = JSON.parse(data);
 		const { type, room } = parsedData;
-		console.log(parsedData);
 
 		// joining the room
 		if (type === "join-room") {
@@ -35,9 +41,9 @@ wss.on("connection", (ws) => {
 			rooms[room].sockets.push(ws);
 		}
 
-		// exchange of messages
+		// send message to the relayer
 		if (type === "chat") {
-			rooms[room]?.sockets.map((socket) => socket.send(data));
+			relayerSocket.send(data);
 		}
 	});
 });
